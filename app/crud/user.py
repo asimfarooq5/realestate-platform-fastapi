@@ -62,6 +62,14 @@ async def update_user(db: AsyncSession, user_id: str, user_update: UserUpdate) -
     return user
 
 
+async def deactivate_user(db: AsyncSession, user_id: str) -> None:
+    user = await get_user_by_id(db, user_id)
+    if not user:
+        return
+    user.is_active = False
+    await db.commit()
+
+
 async def create_agent_profile(db: AsyncSession, user_id: str, profile: AgentProfileCreate) -> AgentProfile:
     db_profile = AgentProfile(
         id=str(uuid.uuid4()),

@@ -5,9 +5,10 @@ from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from app.db.base import get_db
 from app.schemas.property import PropertyResponse, InquiryResponse, InquiryInDB
-from app.schemas.user import UserResponse
+from app.schemas.user import UserResponse, UserUpdate
 from app.api.deps import get_current_user
 from app.crud.property import get_user_properties
+from app.crud.user import update_user, deactivate_user
 from app.models.property import Property, Inquiry
 from app.models.property import Favorite as FavoriteModel
 
@@ -20,6 +21,23 @@ async def get_my_profile(
     current_user = Depends(get_current_user),
 ):
     return current_user
+
+
+@router.put("/me", response_model=UserResponse)
+async def update_my_profile(
+    update_data: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    return await update_user(db, current_user.id, update_data)
+
+
+@router.post("/me/deactivate", status_code=status.HTTP_204_NO_CONTENT)
+async def deactivate_my_account(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    await deactivate_user(db, current_user.id)
 
 
 @router.get("/me/favorites", response_model=List[PropertyResponse])
