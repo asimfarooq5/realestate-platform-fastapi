@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from app.db.base import get_db
 from app.schemas.property import (
-    PropertyResponse, InquiryResponse, PropertyUpdate, PropertyModeration,
+    PropertyResponse, InquiryResponse, InquiryInDB, PropertyUpdate, PropertyModeration,
 )
 from app.schemas.user import UserResponse, UserRoleUpdate
 from app.crud.property import get_property_by_id
@@ -57,11 +57,19 @@ async def list_all_inquiries(
     status_filter: Optional[str] = Query(None, alias="status"),
     db: AsyncSession = Depends(get_db),
 ):
-    query = select(Inquiry).order_by(Inquiry.created_at.desc())
+    query = select(Inquiry).order_by(Inquiry.created_at.desc()).options(selectinload(Inquiry.property))
     if status_filter:
         query = query.where(Inquiry.status == status_filter.upper())
     result = await db.execute(query)
-    return list(result.scalars().all())
+    inquiries = list(result.scalars().all())
+    return [
+        InquiryResponse(
+            **InquiryInDB.model_validate(inquiry).model_dump(),
+            property_title=inquiry.property.title if inquiry.property else None,
+            property_slug=inquiry.property.slug if inquiry.property else None,
+        )
+        for inquiry in inquiries
+    ]
 
 
 @router.get("/users", response_model=List[UserResponse])

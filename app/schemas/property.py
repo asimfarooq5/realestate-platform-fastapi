@@ -296,6 +296,7 @@ class InquiryUpdate(BaseModel):
 class InquiryInDB(InquiryBase):
     id: str
     user_id: Optional[str] = None
+    property_id: str
     status: str
     created_at: datetime
     updated_at: datetime
@@ -305,4 +306,7 @@ class InquiryInDB(InquiryBase):
 
 
 class InquiryResponse(InquiryInDB):
-    pass
+    # Denormalized so a client can render/link a "Messages" list without a
+    # second round-trip per inquiry.
+    property_title: Optional[str] = None
+    property_slug: Optional[str] = None

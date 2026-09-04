@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from app.db.base import get_db
-from app.schemas.property import PropertyResponse, InquiryResponse
+from app.schemas.property import PropertyResponse, InquiryResponse, InquiryInDB
 from app.schemas.user import UserResponse
 from app.api.deps import get_current_user
 from app.crud.property import get_user_properties
@@ -47,9 +47,20 @@ async def get_my_inquiries(
     current_user = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(Inquiry).where(Inquiry.user_id == current_user.id).order_by(Inquiry.created_at.desc())
+        select(Inquiry)
+        .where(Inquiry.user_id == current_user.id)
+        .order_by(Inquiry.created_at.desc())
+        .options(selectinload(Inquiry.property))
     )
-    return list(result.scalars().all())
+    inquiries = list(result.scalars().all())
+    return [
+        InquiryResponse(
+            **InquiryInDB.model_validate(inquiry).model_dump(),
+            property_title=inquiry.property.title if inquiry.property else None,
+            property_slug=inquiry.property.slug if inquiry.property else None,
+        )
+        for inquiry in inquiries
+    ]
 
 
 @router.get("/me/properties", response_model=List[PropertyResponse])

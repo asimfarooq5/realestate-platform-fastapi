@@ -7,7 +7,7 @@ from app.models.property import City, Area, Property
 from app.schemas.property import (
     PropertyCreate, PropertyResponse, PropertyUpdate,
     PropertyListResponse, CityResponse, AreaResponse,
-    InquiryCreate, InquiryResponse, FavoriteResponse,
+    InquiryCreate, InquiryResponse, InquiryInDB, FavoriteResponse,
 )
 from app.crud.property import (
     get_properties, get_property_by_id, get_property_by_slug,
@@ -205,7 +205,11 @@ async def create_property_inquiry(
 
     # Use the property_id from the URL, not the body
     inquiry = await create_inquiry(db, inquiry_data, current_user.id, property_id)
-    return inquiry
+    return InquiryResponse(
+        **InquiryInDB.model_validate(inquiry).model_dump(),
+        property_title=property_obj.title,
+        property_slug=property_obj.slug,
+    )
 
 
 # Favorites
