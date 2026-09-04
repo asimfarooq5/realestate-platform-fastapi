@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.db.base import engine, Base
-from app.api.v1 import auth, properties, users, admin, projects
+from app.api.v1 import auth, properties, users, admin, projects, chat, community
 
 
 @asynccontextmanager
@@ -40,6 +40,8 @@ app.include_router(properties.router, prefix="/api/v1/properties", tags=["proper
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["projects"])
+app.include_router(chat.router, prefix="/api/v1/conversations", tags=["chat"])
+app.include_router(community.router, prefix="/api/v1/community", tags=["community"])
 
 
 @app.get("/")
