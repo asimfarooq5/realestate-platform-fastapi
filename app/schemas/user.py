@@ -1,6 +1,6 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 
 
@@ -16,11 +16,23 @@ class UserBase(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     image: Optional[str] = None
+    date_of_birth: Optional[date] = None
 
 
 class UserCreate(UserBase):
     password: str
     role: UserRole = UserRole.BUYER
+
+    @field_validator("date_of_birth")
+    @classmethod
+    def must_be_at_least_13(cls, value: Optional[date]) -> Optional[date]:
+        if value is None:
+            return value
+        today = date.today()
+        age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
+        if age < 13:
+            raise ValueError("You must be at least 13 to create an account.")
+        return value
 
 
 class LoginRequest(BaseModel):

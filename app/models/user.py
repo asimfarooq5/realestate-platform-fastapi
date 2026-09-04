@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Enum as SQLEnum, Boolean, ForeignKey
+from sqlalchemy import Column, String, DateTime, Date, Enum as SQLEnum, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base import Base
@@ -20,6 +20,7 @@ class User(Base):
     password = Column(String, nullable=True)
     name = Column(String, nullable=True)
     phone = Column(String, nullable=True)
+    date_of_birth = Column(Date, nullable=True)
     role = Column(String, default=UserRole.BUYER.value)
     image = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)

@@ -28,6 +28,7 @@ async def create_user(
         password=get_password_hash(user.password),
         name=user.name,
         phone=user.phone,
+        date_of_birth=user.date_of_birth,
         role=role,
         image=user.image,
         is_active=True,
