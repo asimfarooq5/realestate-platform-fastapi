@@ -61,6 +61,32 @@ class Area(Base):
     properties = relationship("Property", back_populates="area")
 
 
+class ProjectStatus(str, enum.Enum):
+    UPCOMING = "UPCOMING"
+    ONGOING = "ONGOING"
+    COMPLETED = "COMPLETED"
+
+
+class Project(Base):
+    """A developer-marketed housing/commercial scheme (e.g. a housing society)."""
+
+    __tablename__ = "projects"
+
+    id = Column(String, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    slug = Column(String, unique=True, nullable=False)
+    developer = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+    cover_image = Column(String, nullable=True)
+    status = Column(String, default=ProjectStatus.UPCOMING.value)
+    price_starting = Column(Float, nullable=True)
+    city_id = Column(String, ForeignKey("cities.id"), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    city = relationship("City")
+
+
 class Property(Base):
     __tablename__ = "properties"
     
@@ -97,7 +123,17 @@ class Property(Base):
     total_floors = Column(Integer, nullable=True)
     year_built = Column(Integer, nullable=True)
     furnished = Column(Boolean, default=False)
-    
+
+    # Category subtype, e.g. "House"/"Flat"/"Residential Plot"/"Office" — free-form,
+    # validated against a type-specific list on the client.
+    subtype = Column(String, nullable=True)
+    installments_available = Column(Boolean, default=False)
+    is_draft = Column(Boolean, default=False)
+
+    # Detailed feature groups (main features, rooms, nearby facilities, community
+    # facilities) — stored as a single JSON blob rather than dozens of columns.
+    features = Column(Text, nullable=True)  # JSON as string
+
     # Amenities
     amenities = Column(String, nullable=True)  # JSON as string
     

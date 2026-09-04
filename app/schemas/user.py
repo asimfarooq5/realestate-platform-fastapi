@@ -15,12 +15,21 @@ class UserBase(BaseModel):
     email: EmailStr
     name: Optional[str] = None
     phone: Optional[str] = None
-    role: UserRole = UserRole.BUYER
     image: Optional[str] = None
 
 
 class UserCreate(UserBase):
     password: str
+    role: UserRole = UserRole.BUYER
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserRoleUpdate(BaseModel):
+    role: UserRole
 
 
 class UserUpdate(BaseModel):
@@ -31,6 +40,7 @@ class UserUpdate(BaseModel):
 
 class UserInDB(UserBase):
     id: str
+    role: UserRole = UserRole.BUYER
     email_verified: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
@@ -78,6 +88,7 @@ class AgentProfileResponse(AgentProfileInDB):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    user: Optional[UserResponse] = None
 
 
 class TokenData(BaseModel):

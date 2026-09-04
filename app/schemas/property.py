@@ -1,7 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
+import json
 
 
 class PropertyType(str, Enum):
@@ -25,6 +26,12 @@ class ListingStatus(str, Enum):
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
     FEATURED = "FEATURED"
+
+
+class ProjectStatus(str, Enum):
+    UPCOMING = "UPCOMING"
+    ONGOING = "ONGOING"
+    COMPLETED = "COMPLETED"
 
 
 class CityBase(BaseModel):
@@ -121,6 +128,9 @@ class PropertyBase(BaseModel):
     total_floors: Optional[int] = None
     year_built: Optional[int] = None
     furnished: bool = False
+    subtype: Optional[str] = None
+    installments_available: bool = False
+    features: Optional[dict] = None
     amenities: Optional[List[str]] = None
     video_url: Optional[str] = None
     virtual_tour_url: Optional[str] = None
@@ -131,6 +141,7 @@ class PropertyBase(BaseModel):
 
 
 class PropertyCreate(PropertyBase):
+    is_draft: bool = False
     images: Optional[List[PropertyImageBase]] = None
 
 
@@ -139,6 +150,32 @@ class PropertyUpdate(BaseModel):
     description: Optional[str] = None
     price: Optional[float] = None
     status: Optional[PropertyStatus] = None
+    city_id: Optional[str] = None
+    area_id: Optional[str] = None
+    address: Optional[str] = None
+    bedrooms: Optional[int] = None
+    bathrooms: Optional[int] = None
+    kitchens: Optional[int] = None
+    area_size: Optional[float] = None
+    floor: Optional[int] = None
+    total_floors: Optional[int] = None
+    year_built: Optional[int] = None
+    furnished: Optional[bool] = None
+    subtype: Optional[str] = None
+    installments_available: Optional[bool] = None
+    features: Optional[dict] = None
+    amenities: Optional[List[str]] = None
+    video_url: Optional[str] = None
+    virtual_tour_url: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    is_draft: Optional[bool] = None
+
+
+class PropertyModeration(BaseModel):
+    """Admin-only moderation fields — separate from the public update schema."""
     listing_status: Optional[ListingStatus] = None
     featured: Optional[bool] = None
 
@@ -150,8 +187,29 @@ class PropertyInDB(PropertyBase):
     owner_id: str
     views: int
     featured: bool
+    is_draft: bool
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("amenities", mode="before")
+    @classmethod
+    def parse_amenities(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except (ValueError, TypeError):
+                return [v]
+        return v
+
+    @field_validator("features", mode="before")
+    @classmethod
+    def parse_features(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except (ValueError, TypeError):
+                return None
+        return v
 
     class Config:
         from_attributes = True
@@ -171,6 +229,34 @@ class PropertyListResponse(BaseModel):
     pages: int
 
 
+class ProjectBase(BaseModel):
+    title: str
+    developer: Optional[str] = None
+    description: Optional[str] = None
+    cover_image: Optional[str] = None
+    status: ProjectStatus = ProjectStatus.UPCOMING
+    price_starting: Optional[float] = None
+    city_id: Optional[str] = None
+
+
+class ProjectCreate(ProjectBase):
+    pass
+
+
+class ProjectInDB(ProjectBase):
+    id: str
+    slug: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ProjectResponse(ProjectInDB):
+    city: Optional[CityResponse] = None
+
+
 class FavoriteBase(BaseModel):
     property_id: str
 
@@ -188,8 +274,11 @@ class FavoriteInDB(FavoriteBase):
         from_attributes = True
 
 
+class FavoriteResponse(FavoriteInDB):
+    pass
+
+
 class InquiryBase(BaseModel):
-    property_id: str
     name: str
     email: str
     phone: Optional[str] = None

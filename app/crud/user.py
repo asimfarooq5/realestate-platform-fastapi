@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional
-from app.models.user import User, AgentProfile
+from app.models.user import User, AgentProfile, UserRole
 from app.schemas.user import UserCreate, UserUpdate, AgentProfileCreate
 from app.core.security import get_password_hash, verify_password
 import uuid
@@ -17,15 +17,20 @@ async def get_user_by_id(db: AsyncSession, user_id: str) -> Optional[User]:
     return result.scalar_one_or_none()
 
 
-async def create_user(db: AsyncSession, user: UserCreate) -> User:
+async def create_user(
+    db: AsyncSession,
+    user: UserCreate,
+    role: str = UserRole.BUYER.value,
+) -> User:
     db_user = User(
         id=str(uuid.uuid4()),
         email=user.email,
         password=get_password_hash(user.password),
         name=user.name,
         phone=user.phone,
-        role=user.role.value,
+        role=role,
         image=user.image,
+        is_active=True,
     )
     db.add(db_user)
     await db.commit()

@@ -1,0 +1,63 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from typing import List, Optional
+from app.db.base import get_db
+from app.schemas.property import PropertyResponse, InquiryResponse
+from app.schemas.user import UserResponse
+from app.api.deps import get_current_user
+from app.crud.property import get_user_properties
+from app.models.property import Property, Inquiry
+from app.models.property import Favorite as FavoriteModel
+
+router = APIRouter()
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_my_profile(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    return current_user
+
+
+@router.get("/me/favorites", response_model=List[PropertyResponse])
+async def get_my_favorites(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(FavoriteModel)
+        .where(FavoriteModel.user_id == current_user.id)
+        .order_by(FavoriteModel.created_at.desc())
+        .options(
+            selectinload(FavoriteModel.property).selectinload(Property.images),
+            selectinload(FavoriteModel.property).selectinload(Property.city),
+            selectinload(FavoriteModel.property).selectinload(Property.area),
+        )
+    )
+    favorites = list(result.scalars().all())
+    return [fav.property for fav in favorites if fav.property]
+
+
+@router.get("/me/inquiries", response_model=List[InquiryResponse])
+async def get_my_inquiries(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Inquiry).where(Inquiry.user_id == current_user.id).order_by(Inquiry.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
+@router.get("/me/properties", response_model=List[PropertyResponse])
+async def get_my_properties(
+    is_draft: Optional[bool] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    """All of the current user's own listings. Pass is_draft=true for the
+    Drafts screen, is_draft=false for published/pending listings."""
+    return await get_user_properties(db, current_user.id, is_draft=is_draft)

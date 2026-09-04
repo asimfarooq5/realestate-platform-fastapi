@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Enum as SQLEnum, Boolean
+from sqlalchemy import Column, String, DateTime, Enum as SQLEnum, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base import Base
@@ -22,6 +22,7 @@ class User(Base):
     phone = Column(String, nullable=True)
     role = Column(String, default=UserRole.BUYER.value)
     image = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
     email_verified = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -37,7 +38,7 @@ class AgentProfile(Base):
     __tablename__ = "agent_profiles"
     
     id = Column(String, primary_key=True, index=True)
-    user_id = Column(String, unique=True, nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), unique=True, nullable=False)
     company_name = Column(String, nullable=True)
     license_number = Column(String, nullable=True)
     bio = Column(String, nullable=True)
