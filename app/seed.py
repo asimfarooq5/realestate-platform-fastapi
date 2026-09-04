@@ -14,6 +14,21 @@ from app.core.security import get_password_hash
 from sqlalchemy import select
 
 
+# Approximate city-center coordinates, used to seed each sample property's
+# lat/lng so "nearby" sorting has something to work with.
+CITY_COORDS = {
+    "Karachi": (24.8607, 67.0011),
+    "Lahore": (31.5497, 74.3436),
+    "Islamabad": (33.6844, 73.0479),
+    "Rawalpindi": (33.5651, 73.0169),
+    "Faisalabad": (31.4187, 73.0791),
+    "Peshawar": (34.0151, 71.5249),
+    "Quetta": (30.1798, 66.9750),
+    "Multan": (30.1575, 71.5249),
+    "Hyderabad": (25.3960, 68.3578),
+    "Gujranwala": (32.1877, 74.1945),
+}
+
 # Pakistani cities with popular areas
 CITIES = {
     "Karachi": {
@@ -317,6 +332,8 @@ async def seed() -> None:
                     city_id=city.id,
                     area_id=area.id,
                     address=f"{area.name}, {city.name}",
+                    latitude=CITY_COORDS.get(city.name, (None, None))[0],
+                    longitude=CITY_COORDS.get(city.name, (None, None))[1],
                     price=sample["price"],
                     bedrooms=sample["bedrooms"],
                     bathrooms=sample["bathrooms"],

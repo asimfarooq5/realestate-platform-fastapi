@@ -6,7 +6,18 @@ from app.models.property import Property, PropertyImage, City, Area, Favorite, I
 from app.schemas.property import PropertyCreate, PropertyUpdate, InquiryCreate, ProjectCreate
 import uuid
 import json
+import math
 from datetime import datetime
+
+
+def _distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Great-circle distance between two points, in kilometers (haversine)."""
+    r = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    d_phi = math.radians(lat2 - lat1)
+    d_lambda = math.radians(lon2 - lon1)
+    a = math.sin(d_phi / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(d_lambda / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
 
 
 async def get_properties(
@@ -22,6 +33,8 @@ async def get_properties(
     bedrooms: Optional[int] = None,
     search: Optional[str] = None,
     featured: Optional[bool] = None,
+    near_lat: Optional[float] = None,
+    near_lng: Optional[float] = None,
 ) -> tuple[List[Property], int]:
     query = select(Property).where(Property.listing_status == "APPROVED")
     count_query = select(func.count(Property.id)).where(Property.listing_status == "APPROVED")
@@ -67,19 +80,36 @@ async def get_properties(
         query = query.where(search_filter)
         count_query = count_query.where(search_filter)
     
-    query = query.offset(skip).limit(limit).order_by(Property.created_at.desc())
     query = query.options(
         selectinload(Property.images),
         selectinload(Property.city),
         selectinload(Property.area),
     )
-    
+
+    if near_lat is not None and near_lng is not None:
+        # Small dataset: sort in Python by distance rather than reaching for
+        # a DB-specific geo function. Listings with no coordinates sort last.
+        query = query.order_by(Property.created_at.desc())
+        result = await db.execute(query)
+        all_properties = list(result.scalars().all())
+
+        def sort_key(p: Property):
+            if p.latitude is None or p.longitude is None:
+                return (1, 0.0)
+            return (0, _distance_km(near_lat, near_lng, p.latitude, p.longitude))
+
+        all_properties.sort(key=sort_key)
+        total = len(all_properties)
+        return all_properties[skip : skip + limit], total
+
+    query = query.offset(skip).limit(limit).order_by(Property.created_at.desc())
+
     result = await db.execute(query)
     properties = result.scalars().all()
-    
+
     count_result = await db.execute(count_query)
     total = count_result.scalar()
-    
+
     return list(properties), total
 
 
