@@ -3,6 +3,7 @@ from sqlalchemy import select, func, and_, or_, update
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from app.models.property import Property, PropertyImage, City, Area, Favorite, Inquiry, Project
+from app.models.user import User
 from app.schemas.property import PropertyCreate, PropertyUpdate, InquiryCreate, ProjectCreate
 import uuid
 import json
@@ -33,11 +34,19 @@ async def get_properties(
     bedrooms: Optional[int] = None,
     search: Optional[str] = None,
     featured: Optional[bool] = None,
+    agency_only: Optional[bool] = None,
     near_lat: Optional[float] = None,
     near_lng: Optional[float] = None,
 ) -> tuple[List[Property], int]:
     query = select(Property).where(Property.listing_status == "APPROVED")
     count_query = select(func.count(Property.id)).where(Property.listing_status == "APPROVED")
+
+    if agency_only:
+        # "Marketed by Malkiyat" — listings posted by verified agents/the
+        # platform's own team, not ordinary owner-posted listings.
+        agency_ids = select(User.id).where(User.role.in_(["AGENT", "ADMIN"]))
+        query = query.where(Property.owner_id.in_(agency_ids))
+        count_query = count_query.where(Property.owner_id.in_(agency_ids))
     
     if city_id:
         query = query.where(Property.city_id == city_id)

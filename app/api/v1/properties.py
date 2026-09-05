@@ -33,6 +33,7 @@ async def list_properties(
     bedrooms: Optional[int] = None,
     search: Optional[str] = None,
     featured: Optional[bool] = None,
+    agency_only: Optional[bool] = None,
     near_lat: Optional[float] = None,
     near_lng: Optional[float] = None,
     db: AsyncSession = Depends(get_db),
@@ -44,7 +45,7 @@ async def list_properties(
         property_type=type, status=status,
         min_price=min_price, max_price=max_price,
         bedrooms=bedrooms, search=search,
-        featured=featured,
+        featured=featured, agency_only=agency_only,
         near_lat=near_lat, near_lng=near_lng,
     )
 
