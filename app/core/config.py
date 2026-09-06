@@ -14,7 +14,10 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    # No refresh-token flow exists yet, so the access token itself carries
+    # the session — 30 days keeps mobile users logged in between app opens
+    # instead of getting silently 401'd mid-session.
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30
 
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
